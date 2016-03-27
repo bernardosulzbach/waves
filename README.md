@@ -1,2 +1,3 @@
-# waves
-Waves using C and SDL
+# Waves
+
+Geometric waves using C and SDL.
