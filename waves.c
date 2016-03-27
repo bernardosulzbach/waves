@@ -7,6 +7,8 @@
 #include <math.h>
 #include <time.h>
 
+const double TAU = 2 * M_PI;
+
 /**
  * The width of the window, in pixels.
  */
@@ -25,6 +27,7 @@ const int HEIGHT = 480;
 const int MAXIMUM_OSCILLATORS = 10;
 
 const double DEFAULT_AMPLITUDE = 1.0;
+const double DEFAULT_WAVELENGTH = 5.0;
 
 typedef struct Point {
     int x;
@@ -36,6 +39,7 @@ const Point ORIGIN = {0, 0};
 typedef struct Oscillator {
     Point center;
     double amplitude;
+    double wavelength;
 } Oscillator;
 
 typedef struct Universe {
@@ -77,6 +81,7 @@ Oscillator *create_oscillator() {
     Oscillator *oscillator = malloc(sizeof(Oscillator));
     oscillator->center = ORIGIN;
     oscillator->amplitude = DEFAULT_AMPLITUDE;
+    oscillator->wavelength = DEFAULT_WAVELENGTH;
     return oscillator;
 }
 
@@ -130,11 +135,12 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
             const int center_y = center.y;
             for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
                 for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
-                    double dist = distance(x, y, center_x, center_y);
-                    double magic = sin(dist / 12.0) + 1.0; // Translate the image to [0, 2]
+                    const double dist = distance(x, y, center_x, center_y);
+                    const double wave = sin(osc->wavelength * dist / TAU);
+                    const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
                     int array_x = x + WIDTH / 2;
                     int array_y = y + HEIGHT / 2;
-                    intensities[array_y][array_x] += magic / 2.0;
+                    intensities[array_y][array_x] += normalized;
                 }
             }
             printf("Evaluated Oscillator #%d\n", index + 1);
