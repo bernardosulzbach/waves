@@ -1,3 +1,3 @@
-gcc -o waves.o -Wall waves.c `sdl2-config --cflags --libs` -lm
+gcc -o waves.o -Wall -O3 waves.c `sdl2-config --cflags --libs` -lm
 ./waves.o
 rm waves.o

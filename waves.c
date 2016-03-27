@@ -5,9 +5,10 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
-const int WIDTH = 800;
-const int HEIGHT = 800;
+const int WIDTH = 1000;
+const int HEIGHT = 1000;
 
 /**
  * Squares a number.
@@ -53,9 +54,9 @@ Universe *create_universe() {
     return universe;
 }
 
-void write_waves(SDL_Window *window, const Universe * const universe) {
-    SDL_Renderer *renderer;
-    renderer = SDL_CreateRenderer(window, -1, 0);
+void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Universe * const universe) {
+    clock_t start = clock();
+    printf("Started writing waves.\n");
 
     SDL_SetRenderDrawColor(renderer, 127, 127, 127, 0);
     SDL_RenderClear(renderer);
@@ -84,6 +85,9 @@ void write_waves(SDL_Window *window, const Universe * const universe) {
         }
     }
 
+    int ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    printf("Took %d ms to recompute.\n", ms);
+
     for (size_t i = 0; i < HEIGHT; i++) {
         for (size_t j = 0; j < WIDTH; j++) {
             Uint8 normalized = (Uint8) intensities[i][j];
@@ -92,15 +96,26 @@ void write_waves(SDL_Window *window, const Universe * const universe) {
         }
     }
 
+    ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    printf("Took %d ms to redraw.\n", ms);
+
     SDL_RenderPresent(renderer);
-    SDL_DestroyRenderer(renderer);
 }
 
 /**
  * Handles a KEYDOWN event.
  */
 void handle_keydown(Universe *universe, SDL_Event event) {
-
+    const SDL_Keycode sym = event.key.keysym.sym;
+    if (sym == SDLK_UP) {
+        universe->oscillator->center.y--;
+    } else if (sym == SDLK_RIGHT) {
+        universe->oscillator->center.x++;
+    } else if (sym == SDLK_DOWN) {
+        universe->oscillator->center.y++;
+    } else if (sym == SDLK_LEFT) {
+        universe->oscillator->center.x--;
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -119,9 +134,10 @@ int main(int argc, char* argv[]) {
         printf("Could not create window: %s\n", SDL_GetError());
         return 1;
     } else {
+        SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         // Write waves to the window.
         Universe *universe = create_universe();
-        write_waves(window, universe);
+        write_waves(window, renderer, universe);
         SDL_Event event;
         // The window is open, therefore we enter the program loop.
         unsigned int running = 1;
@@ -132,6 +148,7 @@ int main(int argc, char* argv[]) {
                 }
                 else if (event.type == SDL_KEYDOWN) {
                     handle_keydown(universe, event);
+                    write_waves(window, renderer, universe);
                 }
             }
         }
