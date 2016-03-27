@@ -26,8 +26,13 @@ const int HEIGHT = 480;
  */
 const int MAXIMUM_OSCILLATORS = 10;
 
+const double MINIMUM_AMPLITUDE = 0.1;
 const double DEFAULT_AMPLITUDE = 1.0;
-const double DEFAULT_WAVELENGTH = 5.0;
+const double MAXIMUM_AMPLITUDE = 2.0;
+
+const double AMPLITUDE_TICK = 0.1;
+
+const double DEFAULT_WAVELENGTH = 40.0;
 
 typedef struct Point {
     int x;
@@ -58,6 +63,14 @@ typedef struct Controller {
     size_t selection;
     HighlightMode highlight;
 } Controller;
+
+double minimum(double a, double b) {
+    return a < b ? a : b;
+}
+
+double maximum(double a, double b) {
+    return a > b ? a : b;
+}
 
 /**
  * Squares a number.
@@ -136,7 +149,7 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
             for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
                 for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
                     const double dist = distance(x, y, center_x, center_y);
-                    const double wave = sin(osc->wavelength * dist / TAU);
+                    const double wave = sin(dist * TAU / osc->wavelength);
                     const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
                     int array_x = x + WIDTH / 2;
                     int array_y = y + HEIGHT / 2;
@@ -204,6 +217,16 @@ void controller_move_right(Controller *controller) {
     get_controller_oscillator(controller)->center.x++;
 }
 
+void controller_increase_amplitude(Controller *controller) {
+    Oscillator *oscillator = get_controller_oscillator(controller);
+    oscillator->amplitude = minimum(oscillator->amplitude + AMPLITUDE_TICK, MAXIMUM_AMPLITUDE);
+}
+
+void controller_decrease_amplitude(Controller *controller) {
+    Oscillator *oscillator = get_controller_oscillator(controller);
+    oscillator->amplitude = maximum(oscillator->amplitude - AMPLITUDE_TICK, MINIMUM_AMPLITUDE);
+}
+
 void controller_select(Controller *controller, size_t target) {
     controller->selection = target;
     if (get_controller_oscillator(controller) == NULL) {
@@ -239,24 +262,24 @@ int handle_keydown(Controller *controller, SDL_Event event) {
     const SDL_Keycode sym = event.key.keysym.sym;
     if (sym == SDLK_UP) {
         controller_move_up(controller);
-        return 1;
     } else if (sym == SDLK_RIGHT) {
         controller_move_right(controller);
-        return 1;
     } else if (sym == SDLK_DOWN) {
         controller_move_down(controller);
-        return 1;
     } else if (sym == SDLK_LEFT) {
         controller_move_left(controller);
-        return 1;
     } else if (sym >= SDLK_1 && sym <= SDLK_8) {
         controller_select(controller, sym - SDLK_1);
-        return 1;
     } else if (sym == SDLK_DELETE) {
         controller_delete(controller);
-        return 1;
+    } else if (sym == SDLK_KP_PLUS) {
+        controller_increase_amplitude(controller);
+    } else if (sym == SDLK_KP_MINUS) {
+        controller_decrease_amplitude(controller);
+    } else {
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
