@@ -7,8 +7,8 @@
 #include <math.h>
 #include <time.h>
 
-const int WIDTH = 1000;
-const int HEIGHT = 1000;
+const int WIDTH = 480;
+const int HEIGHT = 480;
 
 /**
  * Squares a number.
