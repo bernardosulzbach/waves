@@ -7,8 +7,48 @@
 #include <math.h>
 #include <time.h>
 
-const int WIDTH = 480;
+/**
+ * The width of the window, in pixels.
+ */
+const int WIDTH = 640;
+
+/**
+ * The height of the window, in pixels.
+ */
 const int HEIGHT = 480;
+
+/**
+ * The maximum number of oscillators.
+ *
+ * Currently 10 so that each key from 1 to 0 match to one oscillator.
+ */
+const int MAXIMUM_OSCILLATORS = 10;
+
+const double DEFAULT_AMPLITUDE = 1.0;
+
+typedef struct Point {
+    int x;
+    int y;
+} Point;
+
+const Point ORIGIN = {0, 0};
+
+typedef struct Oscillator {
+    Point center;
+    double amplitude;
+} Oscillator;
+
+typedef struct Universe {
+    Oscillator **oscillators;
+} Universe;
+
+/**
+ * The structure responsible for modifying an Universe from user input.
+ */
+typedef struct Controller {
+    Universe *universe;
+    size_t selection;
+} Controller;
 
 /**
  * Squares a number.
@@ -21,101 +61,179 @@ double distance(double x1, double y1, double x2, double y2) {
     return sqrt(square(x2 - x1) + square(y2 - y1));
 }
 
-double distance_from_center(int x, int y, int width, int height) {
-    return distance(x, y, width / 2, height / 2);
-}
-
 SDL_Surface *get_empty_surface(Uint32 width, Uint32 height) {
     return SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
 }
 
-typedef struct Point {
-    int x;
-    int y;
-} Point;
+/**
+ * Creates an oscillator at the origin.
+ */
+Oscillator *create_oscillator() {
+    Oscillator *oscillator = malloc(sizeof(Oscillator));
+    oscillator->center = ORIGIN;
+    oscillator->amplitude = DEFAULT_AMPLITUDE;
+    return oscillator;
+}
 
-typedef struct Oscillator {
-    Point center;
-} Oscillator;
-
-typedef struct Universe {
-    Oscillator *oscillator;
-} Universe;
+void delete_oscillator(Oscillator *oscillator) {
+    free(oscillator);
+}
 
 /**
  * Creates a Universe.
  */
 Universe *create_universe() {
     Universe *universe = malloc(sizeof(Universe));
-    Oscillator *oscillator = malloc(sizeof(Oscillator));
-    Point origin = {0, 0};
-    oscillator->center = origin;
-    universe->oscillator = oscillator;
+    Oscillator **oscillators = malloc(MAXIMUM_OSCILLATORS * sizeof(Oscillator));
+    oscillators[0] = create_oscillator();
+    for (int i = 1; i < MAXIMUM_OSCILLATORS; i++) {
+        oscillators[i] = NULL;
+    }
+    universe->oscillators = oscillators;
     return universe;
+}
+
+Controller *create_controller(Universe *universe) {
+    Controller *controller = malloc(sizeof(Controller));
+    controller->universe = universe;
+    controller->selection = 0;
+    return controller;
 }
 
 void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Universe * const universe) {
     clock_t start = clock();
-    printf("Started writing waves.\n");
 
     SDL_SetRenderDrawColor(renderer, 127, 127, 127, 0);
     SDL_RenderClear(renderer);
 
-    // The array used for calculations.
+    // The matrix used for the calculations.
     double intensities[HEIGHT][WIDTH];
+    // Initialize the array to 0.
     for (size_t i = 0; i < HEIGHT; i++) {
         for (size_t j = 0; j < WIDTH; j++) {
             intensities[i][j] = 0.0;
         }
     }
 
-    for (size_t o_index = 0; o_index < 1; o_index++) {
-        for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
-            for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
-                Oscillator *osc = universe->oscillator;
-                Point center = osc->center;
-                int center_x = center.x;
-                int center_y = center.y;
-                double dist = distance(x, y, center_x, center_y);
-                double magic = sin(dist) + 1.0; // Translate the image to [0, 2]
-                int array_x = x + WIDTH / 2;
-                int array_y = y + HEIGHT / 2;
-                intensities[array_x][array_y] = 255.0 * magic / 2.0;
+    // Calculate all values of the matrix.
+    for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
+        if (universe->oscillators[index] != NULL) {
+            const Oscillator *osc = universe->oscillators[index];
+            Point center = osc->center;
+            const int center_x = center.x;
+            const int center_y = center.y;
+            for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
+                for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
+                    double dist = distance(x, y, center_x, center_y);
+                    double magic = sin(dist / 12.0) + 1.0; // Translate the image to [0, 2]
+                    int array_x = x + WIDTH / 2;
+                    int array_y = y + HEIGHT / 2;
+                    intensities[array_y][array_x] += magic / 2.0;
+                }
             }
+            printf("Evaluated Oscillator #%d\n", index + 1);
         }
     }
 
     int ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-    printf("Took %d ms to recompute.\n", ms);
+    printf("Took %d ms to recompute.", ms);
+
+    double maximum_intensity = 0.0;
+    for (size_t i = 0; i < HEIGHT; i++) {
+        for (size_t j = 0; j < WIDTH; j++) {
+            if (intensities[i][j] > maximum_intensity) {
+                maximum_intensity = intensities[i][j];
+            }
+        }
+    }
 
     for (size_t i = 0; i < HEIGHT; i++) {
         for (size_t j = 0; j < WIDTH; j++) {
-            Uint8 normalized = (Uint8) intensities[i][j];
+            Uint8 normalized = (Uint8) (255 * (intensities[i][j] / maximum_intensity));
             SDL_SetRenderDrawColor(renderer, normalized, normalized, normalized, 0);
-            SDL_RenderDrawPoint(renderer, i, j);
+            SDL_RenderDrawPoint(renderer, j, i);
         }
     }
 
     ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-    printf("Took %d ms to redraw.\n", ms);
+    printf(" Took %d ms to redraw.\n", ms);
 
     SDL_RenderPresent(renderer);
 }
 
+Oscillator *get_controller_oscillator(Controller *controller) {
+    return controller->universe->oscillators[controller->selection];
+}
+
+void controller_move_up(Controller *controller) {
+    get_controller_oscillator(controller)->center.y--;
+}
+
+void controller_move_left(Controller *controller) {
+    get_controller_oscillator(controller)->center.x--;
+}
+
+void controller_move_down(Controller *controller) {
+    get_controller_oscillator(controller)->center.y++;
+}
+
+void controller_move_right(Controller *controller) {
+    get_controller_oscillator(controller)->center.x++;
+}
+
+void controller_select(Controller *controller, size_t target) {
+    controller->selection = target;
+    if (get_controller_oscillator(controller) == NULL) {
+        controller->universe->oscillators[controller->selection] = create_oscillator();
+    }
+}
+
+void controller_delete(Controller *controller) {
+    Oscillator *oscillator = get_controller_oscillator(controller);
+    delete_oscillator(oscillator);
+    controller->universe->oscillators[controller->selection] = NULL;
+    // Select another Oscillator to prevent a segmentation fault.
+    // A flag indicating whether or not another Oscillator could be found.
+    int found_oscillator = 0;
+    for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS && !found_oscillator; index++) {
+        if (controller->universe->oscillators[index] != NULL) {
+            controller->selection = index;
+            found_oscillator = 1;
+        }
+    }
+    // If we couldn't find another Oscillator, we create a new one with controller_select().
+    if (!found_oscillator) {
+        controller_select(controller, 0);
+    }
+}
+
 /**
  * Handles a KEYDOWN event.
+ *
+ * Returns 0 if this function call didn't change anything.
  */
-void handle_keydown(Universe *universe, SDL_Event event) {
+int handle_keydown(Controller *controller, SDL_Event event) {
     const SDL_Keycode sym = event.key.keysym.sym;
     if (sym == SDLK_UP) {
-        universe->oscillator->center.y--;
+        controller_move_up(controller);
+        return 1;
     } else if (sym == SDLK_RIGHT) {
-        universe->oscillator->center.x++;
+        controller_move_right(controller);
+        return 1;
     } else if (sym == SDLK_DOWN) {
-        universe->oscillator->center.y++;
+        controller_move_down(controller);
+        return 1;
     } else if (sym == SDLK_LEFT) {
-        universe->oscillator->center.x--;
+        controller_move_left(controller);
+        return 1;
+    } else if (sym >= SDLK_1 && sym <= SDLK_8) {
+        controller_select(controller, sym - SDLK_1);
+        return 1;
+    } else if (sym == SDLK_DELETE) {
+        controller_delete(controller);
+        return 1;
     }
+    return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -137,6 +255,7 @@ int main(int argc, char* argv[]) {
         SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         // Write waves to the window.
         Universe *universe = create_universe();
+        Controller *controller = create_controller(universe);
         write_waves(window, renderer, universe);
         SDL_Event event;
         // The window is open, therefore we enter the program loop.
@@ -147,8 +266,9 @@ int main(int argc, char* argv[]) {
                     running = 0;
                 }
                 else if (event.type == SDL_KEYDOWN) {
-                    handle_keydown(universe, event);
-                    write_waves(window, renderer, universe);
+                    if (handle_keydown(controller, event)) {
+                        write_waves(window, renderer, universe);
+                    }
                 }
             }
         }
