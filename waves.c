@@ -42,12 +42,17 @@ typedef struct Universe {
     Oscillator **oscillators;
 } Universe;
 
+typedef enum HighlightMode {
+    HIGHLIGHT_NONE, HIGHLIGHT_DOT
+} HighlightMode;
+
 /**
  * The structure responsible for modifying an Universe from user input.
  */
 typedef struct Controller {
     Universe *universe;
     size_t selection;
+    HighlightMode highlight;
 } Controller;
 
 /**
@@ -97,10 +102,11 @@ Controller *create_controller(Universe *universe) {
     Controller *controller = malloc(sizeof(Controller));
     controller->universe = universe;
     controller->selection = 0;
+    controller->highlight = HIGHLIGHT_DOT;
     return controller;
 }
 
-void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Universe * const universe) {
+void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * const controller, const Universe * const universe) {
     clock_t start = clock();
 
     SDL_SetRenderDrawColor(renderer, 127, 127, 127, 0);
@@ -152,6 +158,17 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Universe * co
             Uint8 normalized = (Uint8) (255 * (intensities[i][j] / maximum_intensity));
             SDL_SetRenderDrawColor(renderer, normalized, normalized, normalized, 0);
             SDL_RenderDrawPoint(renderer, j, i);
+        }
+    }
+
+    if (controller->highlight == HIGHLIGHT_DOT) {
+        // Make a red dot for each Oscillator.
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
+        for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
+            if (universe->oscillators[index] != NULL) {
+                Point center = universe->oscillators[index]->center;
+                SDL_RenderDrawPoint(renderer, center.x + WIDTH / 2, center.y + HEIGHT / 2);
+            }
         }
     }
 
@@ -256,7 +273,7 @@ int main(int argc, char* argv[]) {
         // Write waves to the window.
         Universe *universe = create_universe();
         Controller *controller = create_controller(universe);
-        write_waves(window, renderer, universe);
+        write_waves(window, renderer, controller, universe);
         SDL_Event event;
         // The window is open, therefore we enter the program loop.
         unsigned int running = 1;
@@ -267,7 +284,7 @@ int main(int argc, char* argv[]) {
                 }
                 else if (event.type == SDL_KEYDOWN) {
                     if (handle_keydown(controller, event)) {
-                        write_waves(window, renderer, universe);
+                        write_waves(window, renderer, controller, universe);
                     }
                 }
             }
