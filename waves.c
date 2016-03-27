@@ -162,6 +162,7 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
 
     int ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
     printf("Took %d ms to recompute.", ms);
+    start = clock();
 
     double maximum_intensity = 0.0;
     for (size_t i = 0; i < HEIGHT; i++) {
