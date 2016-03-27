@@ -62,6 +62,7 @@ typedef struct Controller {
     Universe *universe;
     size_t selection;
     HighlightMode highlight;
+    int rendering; // Whether or not we are rendering.
 } Controller;
 
 double minimum(double a, double b) {
@@ -121,6 +122,7 @@ Controller *create_controller(Universe *universe) {
     controller->universe = universe;
     controller->selection = 0;
     controller->highlight = HIGHLIGHT_DOT;
+    controller->rendering = 1;
     return controller;
 }
 
@@ -254,6 +256,10 @@ void controller_delete(Controller *controller) {
     }
 }
 
+void controller_toggle_rendering(Controller *controller) {
+    controller->rendering = controller->rendering ? 0 : 1;
+}
+
 /**
  * Handles a KEYDOWN event.
  *
@@ -277,6 +283,8 @@ int handle_keydown(Controller *controller, SDL_Event event) {
         controller_increase_amplitude(controller);
     } else if (sym == SDLK_KP_MINUS) {
         controller_decrease_amplitude(controller);
+    } else if (sym == SDLK_r) {
+        controller_toggle_rendering(controller);
     } else {
         return 0;
     }
@@ -313,7 +321,7 @@ int main(int argc, char* argv[]) {
                     running = 0;
                 }
                 else if (event.type == SDL_KEYDOWN) {
-                    if (handle_keydown(controller, event)) {
+                    if (handle_keydown(controller, event) && controller->rendering) {
                         write_waves(window, renderer, controller, universe);
                     }
                 }
