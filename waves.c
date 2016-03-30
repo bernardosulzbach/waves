@@ -48,6 +48,9 @@ typedef struct Oscillator {
 } Oscillator;
 
 typedef struct Universe {
+    Uint16 width;
+    Uint16 height;
+    double **value_matrix;
     Oscillator **oscillators;
 } Universe;
 
@@ -106,8 +109,21 @@ void delete_oscillator(Oscillator *oscillator) {
 /**
  * Creates a Universe.
  */
-Universe *create_universe() {
+Universe *create_universe(const Uint16 width, const Uint16 height) {
     Universe *universe = malloc(sizeof(Universe));
+
+    universe->width = width;
+    universe->height = height;
+
+    // Initialize the value matrix
+    universe->value_matrix = malloc(height * sizeof(double*));
+    if (universe->value_matrix) {
+        for (Uint16 y = 0; y < height; y++) {
+            universe->value_matrix[y] = malloc(width * sizeof(double));
+        }
+    }
+
+    // Initialize the Oscillators
     Oscillator **oscillators = malloc(MAXIMUM_OSCILLATORS * sizeof(Oscillator));
     oscillators[0] = create_oscillator();
     for (int i = 1; i < MAXIMUM_OSCILLATORS; i++) {
@@ -126,17 +142,19 @@ Controller *create_controller(Universe *universe) {
     return controller;
 }
 
+void reset_universe_value_matrix(const Universe * const universe) {
+    for (Uint16 y = 0; y < universe->height; y++) {
+        for (Uint16 x = 0; x < universe->width; x++) {
+            universe->value_matrix[y][x] = 0.0;
+        }
+    }
+}
+
+
 void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * const controller, const Universe * const universe) {
     clock_t start = clock();
 
-    // The matrix used for the calculations.
-    double intensities[HEIGHT][WIDTH];
-    // Initialize the array to 0.
-    for (size_t i = 0; i < HEIGHT; i++) {
-        for (size_t j = 0; j < WIDTH; j++) {
-            intensities[i][j] = 0.0;
-        }
-    }
+    reset_universe_value_matrix(universe);
 
     // Calculate all values of the matrix.
     for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
@@ -152,7 +170,7 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
                     const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
                     const int array_x = x + WIDTH / 2;
                     const int array_y = y + HEIGHT / 2;
-                    intensities[array_y][array_x] += normalized;
+                    universe->value_matrix[array_y][array_x] += normalized;
                 }
             }
             printf("Evaluated Oscillator #%d\n", index + 1);
@@ -166,15 +184,15 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
     double maximum_intensity = 0.0;
     for (size_t i = 0; i < HEIGHT; i++) {
         for (size_t j = 0; j < WIDTH; j++) {
-            if (intensities[i][j] > maximum_intensity) {
-                maximum_intensity = intensities[i][j];
+            if (universe->value_matrix[i][j] > maximum_intensity) {
+                maximum_intensity = universe->value_matrix[i][j];
             }
         }
     }
 
     for (size_t i = 0; i < HEIGHT; i++) {
         for (size_t j = 0; j < WIDTH; j++) {
-            Uint8 normalized = (Uint8) (255 * (intensities[i][j] / maximum_intensity));
+            Uint8 normalized = (Uint8) (255 * (universe->value_matrix[i][j] / maximum_intensity));
             SDL_SetRenderDrawColor(renderer, normalized, normalized, normalized, 0);
             SDL_RenderDrawPoint(renderer, j, i);
         }
@@ -306,7 +324,7 @@ int main(int argc, char* argv[]) {
     } else {
         SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         // Write waves to the window.
-        Universe *universe = create_universe();
+        Universe *universe = create_universe(WIDTH, HEIGHT);
         Controller *controller = create_controller(universe);
         write_waves(window, renderer, controller, universe);
         SDL_Event event;
