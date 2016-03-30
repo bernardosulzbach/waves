@@ -129,9 +129,6 @@ Controller *create_controller(Universe *universe) {
 void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * const controller, const Universe * const universe) {
     clock_t start = clock();
 
-    SDL_SetRenderDrawColor(renderer, 127, 127, 127, 0);
-    SDL_RenderClear(renderer);
-
     // The matrix used for the calculations.
     double intensities[HEIGHT][WIDTH];
     // Initialize the array to 0.
@@ -145,7 +142,7 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
     for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
         if (universe->oscillators[index] != NULL) {
             const Oscillator *osc = universe->oscillators[index];
-            Point center = osc->center;
+            const Point center = osc->center;
             const int center_x = center.x;
             const int center_y = center.y;
             for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
@@ -153,8 +150,8 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
                     const double dist = distance(x, y, center_x, center_y);
                     const double wave = sin(dist * TAU / osc->wavelength);
                     const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
-                    int array_x = x + WIDTH / 2;
-                    int array_y = y + HEIGHT / 2;
+                    const int array_x = x + WIDTH / 2;
+                    const int array_y = y + HEIGHT / 2;
                     intensities[array_y][array_x] += normalized;
                 }
             }
