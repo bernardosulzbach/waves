@@ -153,33 +153,35 @@ void reset_universe_value_matrix(const Universe * const universe) {
 
 void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * const controller, const Universe * const universe) {
     clock_t start = clock();
+    int ms;
+    if (controller->rendering) {
+        reset_universe_value_matrix(universe);
 
-    reset_universe_value_matrix(universe);
-
-    // Calculate all values of the matrix.
-    for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
-        if (universe->oscillators[index] != NULL) {
-            const Oscillator *osc = universe->oscillators[index];
-            const Point center = osc->center;
-            const int center_x = center.x;
-            const int center_y = center.y;
-            for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
-                for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
-                    const double dist = distance(x, y, center_x, center_y);
-                    const double wave = sin(dist * TAU / osc->wavelength);
-                    const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
-                    const int array_x = x + WIDTH / 2;
-                    const int array_y = y + HEIGHT / 2;
-                    universe->value_matrix[array_y][array_x] += normalized;
+        // Calculate all values of the matrix.
+        for (unsigned int index = 0; index < MAXIMUM_OSCILLATORS; index++) {
+            if (universe->oscillators[index] != NULL) {
+                const Oscillator *osc = universe->oscillators[index];
+                const Point center = osc->center;
+                const int center_x = center.x;
+                const int center_y = center.y;
+                for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
+                    for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
+                        const double dist = distance(x, y, center_x, center_y);
+                        const double wave = sin(dist * TAU / osc->wavelength);
+                        const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
+                        const int array_x = x + WIDTH / 2;
+                        const int array_y = y + HEIGHT / 2;
+                        universe->value_matrix[array_y][array_x] += normalized;
+                    }
                 }
+                printf("Evaluated Oscillator #%d\n", index + 1);
             }
-            printf("Evaluated Oscillator #%d\n", index + 1);
         }
-    }
 
-    int ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-    printf("Took %d ms to recompute.", ms);
-    start = clock();
+        ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+        printf("Took %d ms to recompute.\n", ms);
+        start = clock();
+    }
 
     double maximum_intensity = 0.0;
     for (size_t i = 0; i < HEIGHT; i++) {
@@ -210,7 +212,7 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
     }
 
     ms = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-    printf(" Took %d ms to redraw.\n", ms);
+    printf("Took %d ms to redraw.\n", ms);
 
     SDL_RenderPresent(renderer);
 }
@@ -336,7 +338,7 @@ int main(int argc, char* argv[]) {
                     running = 0;
                 }
                 else if (event.type == SDL_KEYDOWN) {
-                    if (handle_keydown(controller, event) && controller->rendering) {
+                    if (handle_keydown(controller, event)) {
                         write_waves(window, renderer, controller, universe);
                     }
                 }
