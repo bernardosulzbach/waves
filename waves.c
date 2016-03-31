@@ -57,6 +57,21 @@ typedef enum DissipationModel {
     NUMBER_OF_DISSIPATION_MODELS // Helper value
 } DissipationModel;
 
+/**
+ * Returns a human-readable string for a DissipationModel value.
+ */
+char *dissipation_model_to_string(DissipationModel model) {
+    if (model == NO_DISSIPATION) {
+        return "no dissipation";
+    } else if (model == INVERSE_LINEAR_DISSIPATION) {
+        return "inverse linear";
+    } else if (INVERSE_SQUARE_DISSIPATION) {
+        return "inverse square";
+    } else {
+        return "unknown";
+    }
+}
+
 typedef struct Universe {
     Uint16 width;
     Uint16 height;
@@ -331,8 +346,12 @@ int handle_keydown(Controller *controller, SDL_Event event) {
     } else if (sym == SDLK_r) {
         controller_toggle_rendering(controller);
     } else if (sym == SDLK_d) {
-        DissipationModel current = controller->universe->dissipation_model;
-        controller->universe->dissipation_model = (current + 1) % NUMBER_OF_DISSIPATION_MODELS;
+        const DissipationModel old = controller->universe->dissipation_model;
+        const DissipationModel new = (old + 1) % NUMBER_OF_DISSIPATION_MODELS;
+        controller->universe->dissipation_model = new;
+        const char *old_as_string = dissipation_model_to_string(old);
+        const char *new_as_string = dissipation_model_to_string(new);
+        printf("Toggled from '%s' to '%s'\n", old_as_string, new_as_string);
     } else {
         return 0;
     }

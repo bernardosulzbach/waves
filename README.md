@@ -13,9 +13,33 @@ assuming you already have GCC and its friends installed.
 
 ## Commands
 
+### Selecting an oscillator
+
 The keys 1 through 8 select one of the eight possible oscillators. If that
 oscillator is not active, it is created and added at the origin.
 
+### Moving an oscillator
+
 The arrow keys move the selected oscillator around.
 
+### Deleting oscillators
+
 Pressing `Delete` will delete the currently selected oscillator.
+
+### Changing the intensity of an oscillator
+
+Pressing `+` and `-` should, respectively, increase and decrease the intensity
+of the selected oscillator.
+
+> **Note**: this value has upper and lower bounds, so holding the key forever won't
+> help much. *This is not a bug*.
+
+### Dissipation model
+
+Pressing `D` toggles the dissipation model.
+
+In the terminal window, if the process is not detached, the dissipation model
+changes will be printed.
+
+> **Warning**: these dissipation models are visual approximations not meant to be
+> physically accurate.
