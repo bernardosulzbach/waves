@@ -7,6 +7,8 @@
 #include <math.h>
 #include <time.h>
 
+#define DISSIPATION_START 10.0
+
 // A small yet positive number.
 const double MINIMUM_SAFE_POSITIVE = 1;
 
@@ -183,13 +185,17 @@ double ensure_positive(double value) {
     return value < MINIMUM_SAFE_POSITIVE ? MINIMUM_SAFE_POSITIVE : value;
 }
 
+double max(double a, double b) {
+    return a >= b ? a : b;
+}
+
 double dissipate(double value, double distance, DissipationModel model) {
     if (model == NO_DISSIPATION) {
         return value;
     } else if (model == INVERSE_LINEAR_DISSIPATION) {
-        return value / ensure_positive(distance);
+        return DISSIPATION_START * value / max(DISSIPATION_START, distance);
     } else {
-        return value / square(distance); // No need to ensure positiveness.
+        return DISSIPATION_START * value / square(max(DISSIPATION_START, distance)); // No need to ensure positiveness.
     }
 }
 
