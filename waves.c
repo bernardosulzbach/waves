@@ -1,18 +1,18 @@
 // Using trigonometric functions, draws waves on the screen.
+//
 // Written by Bernardo Sulzbach in 2016 and licensed under the BSD 2-Clause.
 
 #include "SDL.h"
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 #include <time.h>
 
+#include "cached-geometry.h"
+#include "constants.h"
+#include "geometry.h"
+
 #define DISSIPATION_START 10.0
-
-// A small yet positive number.
-const double MINIMUM_SAFE_POSITIVE = 1;
-
-const double TAU = 2 * M_PI;
 
 /**
  * The width of the window, in pixels.
@@ -36,8 +36,6 @@ const double DEFAULT_AMPLITUDE = 1.0;
 const double MAXIMUM_AMPLITUDE = 2.0;
 
 const double AMPLITUDE_TICK = 0.1;
-
-const double DEFAULT_WAVELENGTH = 40.0;
 
 typedef struct Point {
     int x;
@@ -97,25 +95,6 @@ typedef struct Controller {
     HighlightMode highlight;
     int rendering; // Whether or not we are rendering.
 } Controller;
-
-double minimum(double a, double b) {
-    return a < b ? a : b;
-}
-
-double maximum(double a, double b) {
-    return a > b ? a : b;
-}
-
-/**
- * Squares a number.
- */
-double square(double a) {
-    return a * a;
-}
-
-double distance(double x1, double y1, double x2, double y2) {
-    return sqrt(square(x2 - x1) + square(y2 - y1));
-}
 
 SDL_Surface *get_empty_surface(Uint32 width, Uint32 height) {
     return SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
@@ -181,21 +160,13 @@ void reset_universe_value_matrix(const Universe * const universe) {
     }
 }
 
-double ensure_positive(double value) {
-    return value < MINIMUM_SAFE_POSITIVE ? MINIMUM_SAFE_POSITIVE : value;
-}
-
-double max(double a, double b) {
-    return a >= b ? a : b;
-}
-
 double dissipate(double value, double distance, DissipationModel model) {
     if (model == NO_DISSIPATION) {
         return value;
     } else if (model == INVERSE_LINEAR_DISSIPATION) {
-        return DISSIPATION_START * value / max(DISSIPATION_START, distance);
+        return DISSIPATION_START * value / maximum(DISSIPATION_START, distance);
     } else {
-        return DISSIPATION_START * value / square(max(DISSIPATION_START, distance)); // No need to ensure positiveness.
+        return DISSIPATION_START * value / square(maximum(DISSIPATION_START, distance)); // No need to ensure positiveness.
     }
 }
 
@@ -214,10 +185,11 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
                 const int center_y = center.y;
                 for (int x = -WIDTH / 2; x < WIDTH / 2; x++) {
                     for (int y = -HEIGHT / 2; y < HEIGHT / 2; y++) {
-                        const double dist = distance(x, y, center_x, center_y);
-                        const double wave = sin(dist * TAU / osc->wavelength);
-                        const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
-                        const double after_dissipation = dissipate(normalized, dist, universe->dissipation_model);
+                        const double wave_value = sin_of_distance(x - center_x, y - center_y, osc->wavelength);
+                        const double amplitude = (wave_value + 1.0) / 2.0;
+                        // If the model is NO_DISSIPATION, distance_to_center is useless. However, I think GCC removes it then.
+                        const double distance_to_center = distance_to_origin(x - center_x, y - center_y);
+                        const double after_dissipation = dissipate(amplitude, distance_to_center, universe->dissipation_model);
                         const int array_x = x + WIDTH / 2;
                         const int array_y = y + HEIGHT / 2;
                         universe->value_matrix[array_y][array_x] += after_dissipation;
@@ -365,6 +337,7 @@ int handle_keydown(Controller *controller, SDL_Event event) {
 }
 
 int main(int argc, char* argv[]) {
+    init_cached_geometry();
     SDL_Window *window;                   
     SDL_Init(SDL_INIT_VIDEO);              
     window = SDL_CreateWindow(
