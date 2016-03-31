@@ -7,9 +7,11 @@
 #pragma once
 
 #include <math.h>
+#include <stdio.h>
 
 #include "constants.h"
 #include "geometry.h"
+#include "logger.h"
 
 // The biggest value N such that (n, n) is in the cache.
 #define SIN_OF_DISTANCE_CACHE_MAXIMUM 640
@@ -37,6 +39,12 @@ double sin_of_distance(int x, int y, double wavelength) {
             y <= SIN_OF_DISTANCE_CACHE_MAXIMUM) {
         return fetch_sin_of_distance(x, y);
     } else {
+        char *message;
+        // asprintf() returns the number of bytes written to the string.
+        if (asprintf(&message, "Failed to fetch (%d, %d) from the cache.", x, y) > 0) {
+            log_message(1, message);
+            free(message);
+        }
         return evaluate_sin_of_distance(x, y, wavelength);
     }
 }
