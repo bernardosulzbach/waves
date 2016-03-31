@@ -7,6 +7,9 @@
 #include <math.h>
 #include <time.h>
 
+// A small yet positive number.
+const double MINIMUM_SAFE_POSITIVE = 1;
+
 const double TAU = 2 * M_PI;
 
 /**
@@ -47,12 +50,22 @@ typedef struct Oscillator {
     double wavelength;
 } Oscillator;
 
+typedef enum DissipationModel {
+    NO_DISSIPATION,
+    INVERSE_LINEAR_DISSIPATION,
+    INVERSE_SQUARE_DISSIPATION,
+    NUMBER_OF_DISSIPATION_MODELS // Helper value
+} DissipationModel;
+
 typedef struct Universe {
     Uint16 width;
     Uint16 height;
     double **value_matrix;
+    DissipationModel dissipation_model;
     Oscillator **oscillators;
 } Universe;
+
+const DissipationModel DEFAULT_UNIVERSE_DISSIPATION_MODEL = NO_DISSIPATION;
 
 typedef enum HighlightMode {
     HIGHLIGHT_NONE, HIGHLIGHT_DOT
@@ -130,6 +143,7 @@ Universe *create_universe(const Uint16 width, const Uint16 height) {
         oscillators[i] = NULL;
     }
     universe->oscillators = oscillators;
+    universe->dissipation_model = DEFAULT_UNIVERSE_DISSIPATION_MODEL;
     return universe;
 }
 
@@ -150,6 +164,19 @@ void reset_universe_value_matrix(const Universe * const universe) {
     }
 }
 
+double ensure_positive(double value) {
+    return value < MINIMUM_SAFE_POSITIVE ? MINIMUM_SAFE_POSITIVE : value;
+}
+
+double dissipate(double value, double distance, DissipationModel model) {
+    if (model == NO_DISSIPATION) {
+        return value;
+    } else if (model == INVERSE_LINEAR_DISSIPATION) {
+        return value / ensure_positive(distance);
+    } else {
+        return value / square(distance); // No need to ensure positiveness.
+    }
+}
 
 void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * const controller, const Universe * const universe) {
     clock_t start = clock();
@@ -169,9 +196,10 @@ void write_waves(SDL_Window *window, SDL_Renderer *renderer, const Controller * 
                         const double dist = distance(x, y, center_x, center_y);
                         const double wave = sin(dist * TAU / osc->wavelength);
                         const double normalized = osc->amplitude * (wave + 1.0) / 2.0;
+                        const double after_dissipation = dissipate(normalized, dist, universe->dissipation_model);
                         const int array_x = x + WIDTH / 2;
                         const int array_y = y + HEIGHT / 2;
-                        universe->value_matrix[array_y][array_x] += normalized;
+                        universe->value_matrix[array_y][array_x] += after_dissipation;
                     }
                 }
                 printf("Evaluated Oscillator #%d\n", index + 1);
@@ -302,6 +330,9 @@ int handle_keydown(Controller *controller, SDL_Event event) {
         controller_decrease_amplitude(controller);
     } else if (sym == SDLK_r) {
         controller_toggle_rendering(controller);
+    } else if (sym == SDLK_d) {
+        DissipationModel current = controller->universe->dissipation_model;
+        controller->universe->dissipation_model = (current + 1) % NUMBER_OF_DISSIPATION_MODELS;
     } else {
         return 0;
     }
