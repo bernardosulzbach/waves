@@ -42,7 +42,8 @@ double sin_of_distance(int x, int y, double wavelength) {
         char message[256];
         // sprintf() returns the number of bytes written to the string.
         if (sprintf(message, "Failed to fetch (%d, %d) from the cache.", x, y) > 0) {
-            log_message(1, message);
+            char *tags[] = {"GEOMETRY_CACHE_MISS"};
+            log_message(2, message, tags, 1);
         }
         return evaluate_sin_of_distance(x, y, wavelength);
     }
