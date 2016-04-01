@@ -46,3 +46,6 @@ depcomp
 install-sh
 missing
 waves
+
+# Waves
+log.txt
