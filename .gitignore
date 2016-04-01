@@ -30,3 +30,18 @@
 
 # Debug files
 *.dSYM/
+
+# Autoconf & Automake
+.deps/
+Makefile
+Makefile.in
+acinclude.m4
+autom4te.cache/
+compile
+config.log
+config.status
+configure
+depcomp
+install-sh
+missing
+waves

@@ -2,7 +2,15 @@
 
 Geometric waves using C and SDL.
 
-A simple `bash run.sh` suffices right now.
+## Installing
+
+```bash
+$ autoconf
+$ automake
+$ ./configure
+$ make
+$ ./waves
+```
 
 ## Requirements
 
