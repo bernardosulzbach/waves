@@ -5,10 +5,8 @@ Geometric waves using C and SDL.
 ## Building Waves
 
 ```bash
-$ aclocal
-$ autoconf
-$ automake
-$ ./configure --add-missing --foreign
+$ ./autogen.sh
+$ ./configure
 $ make
 ```
 
