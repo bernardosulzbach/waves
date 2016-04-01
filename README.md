@@ -2,14 +2,14 @@
 
 Geometric waves using C and SDL.
 
-## Installing
+## Building Waves
 
 ```bash
+$ aclocal
 $ autoconf
 $ automake
-$ ./configure
+$ ./configure --add-missing --foreign
 $ make
-$ ./waves
 ```
 
 ## Requirements
