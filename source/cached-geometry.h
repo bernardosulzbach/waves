@@ -14,7 +14,7 @@
 #include "logger.h"
 
 // The biggest value N such that (n, n) is in the cache.
-#define SIN_OF_DISTANCE_CACHE_MAXIMUM 640
+#define SIN_OF_DISTANCE_CACHE_MAXIMUM 500
 
 double SIN_OF_DISTANCE_CACHE[SIN_OF_DISTANCE_CACHE_MAXIMUM + 1][SIN_OF_DISTANCE_CACHE_MAXIMUM + 1];
 

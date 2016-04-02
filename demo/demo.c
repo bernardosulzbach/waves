@@ -17,12 +17,12 @@
 /**
  * The width of the window, in pixels.
  */
-const int WIDTH = 640;
+#define WIDTH 500
 
 /**
  * The height of the window, in pixels.
  */
-const int HEIGHT = 480;
+#define HEIGHT 500
 
 /**
  * The maximum number of oscillators.
