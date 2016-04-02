@@ -5,12 +5,17 @@ Geometric waves using C and SDL.
 ## Building Waves
 
 ```bash
-$ ./autogen.sh
-$ ./configure
+$ cmake .
 $ make
 ```
 
-## Requirements
+### Running the demo
+
+```bash
+$ ./demo/demo
+```
+
+### Requirements
 
 You will need the SDL 2.0 development library in order to compile the program,
 assuming you already have GCC and its friends installed.

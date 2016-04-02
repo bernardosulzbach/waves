@@ -47,5 +47,11 @@ install-sh
 missing
 waves
 
+# CMake
+cmake_install.cmake
+CMakeFiles/
+CMakeCache.txt
+
 # Waves
+demo/demo
 log.txt
