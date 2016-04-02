@@ -15,6 +15,12 @@ $ make
 $ ./demo/demo
 ```
 
+### Running the tests
+
+```bash
+$ ./autotest/autotest
+```
+
 ### Requirements
 
 You will need the SDL 2.0 development library in order to compile the program,
