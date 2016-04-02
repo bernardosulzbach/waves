@@ -53,5 +53,6 @@ CMakeFiles/
 CMakeCache.txt
 
 # Waves
+autotest/autotest
 demo/demo
 log.txt
