@@ -24,6 +24,8 @@
  */
 #define HEIGHT 500
 
+#define FRAMES_PER_SEC 10
+
 /**
  * The maximum number of oscillators.
  *
@@ -361,6 +363,7 @@ int main(int argc, char* argv[]) {
         SDL_Event event;
         // The window is open, therefore we enter the program loop.
         unsigned int running = 1;
+        clock_t last_rendering = clock();
         while (running) {
             while (SDL_PollEvent(&event) != 0) {
                 if (event.type == SDL_QUIT) {
@@ -368,7 +371,15 @@ int main(int argc, char* argv[]) {
                 }
                 else if (event.type == SDL_KEYDOWN) {
                     if (handle_keydown(controller, event)) {
-                        write_waves(window, renderer, controller, universe);
+                        const clock_t current_time = clock();
+                        // Casting CPU time values to double makes sure that
+                        // arithmetic operations work properly and consistently
+                        // no matter what the underlying representation is.
+                        const double seconds = ((double) (current_time - last_rendering)) / CLOCKS_PER_SEC;
+                        if (seconds * FRAMES_PER_SEC >= 1) {
+                            write_waves(window, renderer, controller, universe);
+                            last_rendering = clock();
+                        }
                     }
                 }
             }
